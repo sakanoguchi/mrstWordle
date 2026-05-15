@@ -1,0 +1,691 @@
+<!--Created by a Merc Storia Fan with AI-->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>メルストWordle</title>
+    <style>
+        :root {
+            --correct: #6aaa64;
+            --present: #c9b458; --absent: #787c7e; --tile-border: #bdc3c7;
+            --danger: #ef5350; --primary: #5dade2; --bg: #f8f9fa; --text: #333;
+        }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; background-color: var(--bg);
+        margin: 0; padding: 5px; color: var(--text); touch-action: manipulation; }
+        @media (max-width: 600px) {
+            .tile {
+                width: 28px !important;
+                height: 28px !important;
+                font-size: 1rem !important;
+            }
+            .board-block {
+                gap: 2px !important;
+            }
+            .board-container {
+                padding: 10px 5px !important;
+                gap: 5px !important;
+            }
+            .keyboard-container { padding: 5px !important; }
+            .kb-row { gap: 2px !important; margin-bottom: 2px !important; }
+            .key { padding: 10px 0 !important; font-size: 13px !important; }
+        }
+        .header { display: flex;
+        justify-content: space-between; align-items: center; max-width: 500px; margin: 0 auto; padding: 10px 5px; border-bottom: 1px solid #ddd;
+        }
+        h3 { margin: 0; font-size: 1.1rem; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: center;
+        }
+        .header-btns { display: flex; gap: 5px; }
+        .icon-btn { background: none; border: none; cursor: pointer; padding: 5px; display: flex;
+        align-items: center; justify-content: center; color: #666; }
+        .icon-btn svg { width: 24px;
+        height: 24px; fill: currentColor; }
+        
+        .badge-container { display: flex; gap: 4px; flex-wrap: wrap; }
+        .diff-badge { font-size: 0.65rem; padding: 2px 6px;
+        border-radius: 4px; background: #eee; font-weight: normal; color: #555; white-space: nowrap; }
+
+        .mode-tabs { display: flex; justify-content: center;
+        gap: 0; margin: 10px auto; max-width: 500px; background: #e0e0e0; border-radius: 8px; padding: 3px;
+        }
+        .tab { flex: 1; padding: 8px; cursor: pointer; border: none; border-radius: 6px;
+        font-weight: bold; font-size: 14px; background: none; color: #666; }
+        .tab.active { background: white;
+        color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        .board-container { display: flex;
+        justify-content: center; gap: 10px; margin-bottom: 15px; background: white; padding: 15px 20px;  
+        border-bottom: 1px solid #eee; 
+        width: fit-content;       
+        max-width: 96%;           
+        box-sizing: border-box;   
+        border-radius: 8px;       
+        margin-left: auto; margin-right: auto;
+        }
+        .board-block { display: grid; gap: 5px;
+        }
+        .tile { width: 42px; height: 42px; border: 2px solid var(--tile-border); font-size: 20px;
+        font-weight: bold; display: flex; align-items: center; justify-content: center; background-color: white; border-radius: 4px; transition: 0.8s;
+        }
+        .flip { transform: rotateX(360deg);
+        }
+        .correct { background-color: var(--correct) !important; color: white; border-color: var(--correct) !important;
+        }
+        .present { background-color: var(--present) !important; color: white; border-color: var(--present) !important;
+        }
+        .absent  { background-color: var(--absent) !important; color: white; border-color: var(--absent) !important;
+        }
+
+        .keyboard-container { max-width: 520px; margin: 0 auto; background: #fff; padding: 10px;
+        border-radius: 8px; }
+        .kb-row { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px;
+        margin-bottom: 4px; }
+        .kb-separator { height: 15px;
+        }
+        .key { padding: 12px 0; background: #ebf0f3; border: none; border-radius: 4px;
+        font-size: 15px; font-weight: bold; cursor: pointer; color: #333; }
+        .key.key-absent { background-color: var(--absent) !important;
+        color: white; }
+        .key.correct { background-color: var(--correct) !important; color: white;
+        }
+        .key.present { background-color: var(--present) !important; color: white;
+        }
+
+        .controls { margin-top: 15px; display: flex; justify-content: center; gap: 8px; max-width: 500px;
+        margin-left: auto; margin-right: auto; }
+        .btn-main { flex: 1; padding: 15px 0;
+        font-size: 16px; font-weight: bold; cursor: pointer; border-radius: 8px; border: none;
+        }
+        .btn-enter { background: #6aaa64; color: white;
+        }
+        .btn-del { background: #adb5bd; color: white;
+        }
+        .btn-share { background: #000; color: white;
+        }
+        .btn-next { background: var(--primary); color: white;
+        }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%;
+        height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;
+        }
+        .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 400px;
+        position: relative; text-align: left; max-height: 85vh; overflow-y: auto; }
+        .close-btn { 
+            position: absolute;
+            top: 10px;          
+            right: 10px;        
+            font-size: 24px; 
+            cursor: pointer; 
+            border: none; 
+            background: none;   
+            color: #999; 
+            z-index: 10;
+        }
+        
+        .filter-group { display: flex;
+        flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+        .filter-btn { padding: 4px 8px;
+        font-size: 0.75rem; border: 1px solid #ddd; background: #fff; border-radius: 4px; cursor: pointer;
+        }
+        .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary);
+        }
+
+        .diff-desc { font-size: 0.8rem; color: #666; margin-top: 5px; min-height: 1.2rem;
+        }
+        .stat-notice { font-size: 0.7rem; color: #ef5350; margin-top: 5px; font-weight: bold; }
+
+        .stats-container { display: flex; justify-content: space-around; text-align: center; margin: 15px 0; }
+        .stat-box { flex: 1; }
+        .stat-val { font-size: 1.5rem; font-weight: bold; }
+        .stat-label { font-size: 0.7rem; color: #666; }
+        .dist-chart { margin-top: 20px; }
+        .dist-row { display: flex; align-items: center; margin-bottom: 4px; font-size: 13px; }
+        .dist-label { display: inline-block; width: 18px; text-align: right; }
+        .dist-bar { background: #86888a; color: white; padding: 2px 8px; text-align: right; border-radius: 2px; margin-left: 5px; min-width: 20px; transition: width 0.5s; }
+        .dist-bar.highlight { background: var(--correct); }
+
+        .help-section { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px;
+        }
+        .help-example { display: flex; flex-direction: column; gap: 8px; margin: 15px 0;
+        }
+        .example-row { display: flex; gap: 5px; align-items: center;
+        }
+        .example-tile { width: 32px; height: 32px; border: 2px solid #ccc; display: flex;
+        align-items: center; justify-content: center; font-weight: bold; font-size: 14px; border-radius: 4px;
+        }
+        .help-text { font-size: 0.85rem; line-height: 1.5; color: #444;
+        }
+        .help-sub { font-size: 0.8rem; background: #fdfdfd; padding: 10px; border-radius: 5px;
+        border-left: 3px solid var(--primary); }
+        .mode-info { font-size: 0.85rem; margin-top: 10px; line-height: 1.6;
+        }
+        .mode-info b { color: var(--primary);
+        }
+
+        .countdown-timer { background: #f0f4f8; padding: 10px; border-radius: 8px; margin: 15px 0;
+        font-size: 0.9rem; font-weight: bold; }
+
+        #toast { visibility: hidden; min-width: 200px; background-color: #333;
+        color: #fff; text-align: center; border-radius: 5px; padding: 10px; position: fixed; z-index: 2000; left: 50%; transform: translateX(-50%); top: 15%; font-size: 14px;
+        }
+        #toast.show { visibility: visible; animation: f-inout 1.5s;
+        }
+        @keyframes f-inout { 0%, 100% { opacity: 0;
+        } 10%, 90% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div id="toast">存在しないユニットです</div>
+
+    <div class="header">
+        <button class="icon-btn" onclick="showHelp()">
+            <svg viewBox="0 0 24 24"><path d="M11,18H13V16H11V18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,6A4,4 0 0,0 8,10H10A2,2 0 0,1 12,8A2,2 0 0,1 14,10C14,12 11,11.75 11,15H13C13,12.75 16,12.5 16,10A4,4 0 0,0 12,6Z" /></svg>
+        </button>
+       
+        <h3>
+            <div>メルストWordle</div>
+            <div class="badge-container" id="header-badges"></div>
+        </h3>
+
+        <div class="header-btns">
+            <button class="icon-btn" onclick="showStats()">
+                <svg viewBox="0 0 24 24"><path d="M5,19V13H8V19H5M10,19V9H13V19H10M15,19V5H18V19H15Z" /></svg>
+            </button>
+            <button class="icon-btn" id="settings-trigger" onclick="showSettings()">
+                <svg viewBox="0 0 24 24"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.97 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.97 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.34 4.5,12.33 4.5,12C4.5,11.67 4.53,11.34 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.95C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.95L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" /></svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="mode-tabs">
+        <button class="tab" id="tab-daily" onclick="switchMode('daily')">デイリーモード</button>
+        <button class="tab active" id="tab-free" onclick="switchMode('free')">フリーモード</button>
+    </div>
+
+    <div class="board-container">
+        <div class="board-block" id="block-1"></div>
+        <div class="board-block" id="block-2"></div>
+    </div>
+
+    <div id="action-area" style="height: 40px; margin-bottom: 10px;"></div>
+    <div class="keyboard-container" id="kb-area"></div>
+    
+    <div class="controls">
+        <button id="main-enter-btn" class="btn-main btn-enter" onclick="submitGuess()">ENTER</button>
+        <button id="main-del-btn" class="btn-main btn-del" onclick="deleteChar()">⌫</button>
+    </div>
+
+    <div class="modal-overlay" id="help-modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="hideModals()">×</button>
+            <h2 style="text-align:center; margin-top:0;">遊び方</h2>
+            <p>メルストに登場するユニットの名前(お題)を、10回以内の解答で当てるゲームです。<br>
+<span style="font-size: 0.8em;">※<a href="https://www.nytimes.com/games/wordle/index.html" target="_blank" rel="noopener noreferrer" style="color: var(--primary);">Wordle</a> を参考にして制作させて頂きました。</span></p>
+            
+            <div class="help-section">
+                <strong>例</strong>
+                <div class="help-example">
+                    <div class="example-row"><div class="example-tile">シ</div><div class="example-tile">ト</div><div class="example-tile correct">ル</div><div class="example-tile">イ</div><div class="example-tile">ユ</div></div>
+                    <p class="help-text">この場合、「<b>ル</b>」はお題ユニットの名前に含まれており、位置も合っています。</p>
+                    <div class="example-row"><div class="example-tile">テ</div><div class="example-tile present">ィ</div><div class="example-tile">フ</div><div class="example-tile">ォ</div><div class="example-tile">ネ</div></div>
+                    <p class="help-text">この場合、「<b>ィ</b>」はお題ユニットの名前に含まれていますが、位置が異なります。</p>
+                    <div class="example-row"><div class="example-tile">ハ</div><div class="example-tile">ル</div><div class="example-tile absent">シ</div><div class="example-tile">ュ</div><div class="example-tile">ト</div></div>
+                <p class="help-text">この場合、「<b>シ</b>」はお題ユニットの名前に含まれません。</p>
+                </div>
+            </div>
+
+            <div class="help-section">
+                <strong>モードについて</strong>
+                <div class="mode-info">
+                    <b>【デイリーモード】</b><br>
+                    ・5文字のユニットのみ出題されます。<br>
+                    ・1日1回挑戦できます。<br>
+                    ・毎日、0時にお題が更新されます。<br><br>
+                    <b>【フリーモード】</b><br>
+                    ・お好みの設定で、何度でも遊べるモードです。<br>
+                    ・難易度変更や国別フィルター機能で、お題になるユニットを絞り込むことができます。<br>
+                    <span style="color:var(--danger); font-size:0.75rem;">※フィルター機能使用中は、統計への記録は停止されます。</span>
+                </div>
+            </div>
+
+            <div class="help-sub">
+                <strong>補足</strong>
+                <ul style="padding-left: 18px; margin: 8px 0; font-size: 0.8rem;">
+                    <li>ひらがなや漢字のユニットも、<b>カタカナ</b>で解答してください。</li>
+                    <li>出身国が「その他」（コラボユニット）や、癒術士（ユウ、レクルス）は登場しません。</li>
+                    <li>「雫の国」はユニットが1名のため、絞り込みが利用できません。</li>
+                </ul>
+            </div>
+            
+            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; font-size: 0.75rem; color: #777; line-height: 1.4;">
+                <p>このサイトは個人が運営するファンサイトであり、Happy Elements株式会社様をはじめとする公式の団体とは一切関係ありません。</p>
+                <p>改善要望、バグの報告などありましたら、制作者のXアカウントまで、お気軽にご連絡ください。<br>
+                <a href="https://x.com/sakanoguchi_425" target="_blank" style="color: var(--primary); text-decoration: none; font-weight: bold;">@sakanoguchi_425</a></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="result-modal">
+        <div class="modal-content" style="text-align:center;">
+            <button class="close-btn" onclick="hideModals()">×</button>
+            <h2 id="result-status"></h2>
+            <div id="answer-display" style="font-size:1.5rem; font-weight:bold; margin:10px 0;"></div>
+            <div id="countdown-area" class="countdown-timer" style="display:none;">
+                お題更新まで<br><span id="timer-text">00:00:00</span>
+            </div>
+            <button class="btn-main btn-share" style="width:100%; margin-bottom:10px;" onclick="shareX()">Xで結果を共有</button>
+            <button id="next-btn-modal" class="btn-main btn-next" style="width:100%;" onclick="resetGame()">次の問題へ</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="stats-modal">
+        <div class="modal-content" style="text-align:center;">
+            <button class="close-btn" onclick="hideModals()">×</button>
+            <h2 id="stats-title" style="margin-top:0;">統計</h2>
+            <div class="stats-container">
+                <div class="stat-box"><div class="stat-val" id="stat-played">0</div><div class="stat-label">挑戦</div></div>
+                <div class="stat-box"><div class="stat-val" id="stat-winrate">0%</div><div class="stat-label">勝率</div></div>
+                <div class="stat-box"><div class="stat-val" id="stat-streak">0</div><div class="stat-label">現在の連勝</div></div>
+                <div class="stat-box"><div class="stat-val" id="stat-maxstreak">0</div><div class="stat-label">最大連勝</div></div>
+            </div>
+            <h3>手数の分布</h3>
+            <div id="dist-chart" class="dist-chart"></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="settings-modal"><div class="modal-content"><button class="close-btn" onclick="hideModals()">×</button><h3>難易度設定</h3><div style="display:flex; gap:5px; margin-bottom:5px;"><button class="filter-btn" id="diff-easy" onclick="changeDifficulty('easy')" style="flex:1;">ふつう</button><button class="filter-btn" id="diff-normal" onclick="changeDifficulty('normal')" style="flex:1;">ムズ</button><button class="filter-btn" id="diff-hard" onclick="changeDifficulty('hard')" style="flex:1;">激ムズ</button></div><div class="diff-desc" id="diff-explanation"></div><h3 style="margin-top:20px; margin-bottom:0px;">出身国フィルター</h3><div class="stat-notice">※フィルター機能使用中は、統計への記録は停止されます。</div><div class="filter-group" id="country-filters"></div><button class="btn-main" style="width:100%; margin-top:20px; background:var(--primary); color:white;" onclick="resetGame()">設定を適用して新しく始める</button></div></div>
+    
+    <div class="modal-overlay" id="giveup-modal"><div class="modal-content" style="text-align:center;"><p>降参して答えを見ますか？</p><button class="btn-main" style="width:100%; margin-bottom:10px; background:#ff8a80; color:white;" onclick="confirmGiveupAction()">答えを見る</button><button class="btn-main" style="width:100%; background:#eee;" onclick="hideModals()">戻る</button></div></div>
+
+    <script>
+        const rawUnits = `アクレイム:エレキ,アメシスト:エレキ,アメトリン:エレキ,イオナ:エレキ,ウィステル:エレキ,エオーリン:エレキ,エマ:エレキ,エルネス:エレキ,エレノア:エレキ,エンキドゥ:エレキ,カルセ:エレキ,クララサテラ:エレキ,クレア:エレキ,ゲイル:エレキ,コリン:エレキ,シグナル:エレキ,シビック:エレキ,ジューチェ:エレキ,シュトルツ:エレキ,スクアノヴァ:エレキ,ステルラート:エレキ,ゼア:エレキ,ゼハネル:エレキ,セルヴォルク:エレキ,ダル:エレキ,チアチール:エレキ,ティトラ:エレキ,テイル:エレキ,ティロ:エレキ,デルニエ:エレキ,トレノセリカ:エレキ,ナイト:エレキ,ノーチェ:エレキ,ノーフィール:エレキ,ハーツヘルツ:エレキ,ピチカーリエ:エレキ,ファニー:エレキ,ファンタジア:エレキ,プリズム:エレキ,プリル:エレキ,フルシア:エレキ,ベルデライト:エレキ,ボースハイト:エレキ,ホセファ:エレキ,ポワニエ:エレキ,マオ:エレキ,ミサリサ:エレキ,ムント:エレキ,メランコリ:エレキ,メリア:エレキ,ユピテル:エレキ,ヨランダ:エレキ,ライハイト:エレキ,ラッセン:エレキ,ラッドストー:エレキ,ラルト:エレキ,リアリーズ:エレキ,リアンキッス:エレキ,ルト:エレキ,レイ:エレキ,レイヤー:エレキ,レゾナント:エレキ,ロエナ:エレキ,ロデリック:エレキ,ロベルタ:エレキ,
+ヴァニラ:お菓子,オペラティオ:お菓子,オランジェ:お菓子,ガトー:お菓子,カラメロ:お菓子,カルアミル:お菓子,クッキー:お菓子,グミ:お菓子,グラス:お菓子,グラッセ:お菓子,クラリエテス:お菓子,クリーム:お菓子,クルティエル:お菓子,ゲルトルート:お菓子,ゴーフル:お菓子,ゴルディン:お菓子,コンフィ:お菓子,ジェラベリー:お菓子,ジェリー:お菓子,シトラス:お菓子,ジネット:お菓子,シュガリー:お菓子,シュクレーレ:お菓子,ショコラ:お菓子,ショット:お菓子,ジョルジュ:お菓子,シロップ:お菓子,ソォダ:お菓子,ソルベリーズ:お菓子,ターネス:お菓子,タルトレード:お菓子,ティーガー:お菓子,トゥルータ:お菓子,トルテ:お菓子,パネットーネ:お菓子,パフリー:お菓子,パルトスク:お菓子,ハロハロ:お菓子,ピターニア:お菓子,フィレナール:お菓子,フェスカ:お菓子,プディン:お菓子,プラリネ:お菓子,フランシール:お菓子,フレジエ:お菓子,フロフィア:お菓子,ホイップ:お菓子,ホワイトミル:お菓子,ボンボン:お菓子,マーガレット:お菓子,マシマロ:お菓子,マフィン:お菓子,マルメラータ:お菓子,マレード:お菓子,ミルフィーノ:お菓子,ミルトリン:お菓子,メルティ:お菓子,メルティペコ:お菓子,メレンゲ:お菓子,ヨルトルット:お菓子,ラクリッズ:お菓子,ラッテ:お菓子,ラフレーズ:お菓子,ラムネ:お菓子,ロッシェ:お菓子,ワッフル:お菓子,
+アーチャー:王国,アーデ:王国,アーティス:王国,アイオス:王国,アコライト:王国,アルセリア:王国,アルディハラ:王国,アレク:王国,アレッツ:王国,イース:王国,イライアス:王国,イリス:王国,ヴァライフェ:王国,ヴィッテ:王国,ヴェルデ:王国,ウォーリアー:王国,エヴラース:王国,エトーレ:王国,エリオット:王国,エリカ:王国,エルミリア:王国,オーシャン:王国,カイザー:王国,カナン:王国,カルム:王国,ガンナー:王国,ギャレット:王国,クライド:王国,クリスティア:王国,ケフカ:王国,コムギーコ:王国,ジェイロ:王国,シエース:王国,シェスディ:王国,シエット:王国,シキ:王国,シャティア:王国,シルハトテ:王国,スー:王国,スケアヘッド:王国,ステラ:王国,ソードマン:王国,ソファラ:王国,ダレン:王国,チェルシー:王国,チャチャ:王国,ティティ:王国,ディレット:王国,テオドール:王国,トゥーナ:王国,ナジュム:王国,ネモ:王国,ハーバート:王国,ハイネ:王国,パドベル:王国,パピル:王国,ハル:王国,バルビーナ:王国,パロアルテ:王国,ハンス:王国,ファーティ:王国,フィーリア:王国,フェルゼン:王国,フエンテ:王国,フォールゼン:王国,プラータ:王国,フラールルゥ:王国,プリシラ:王国,ホプライト:王国,マジシャン:王国,ミリエル:王国,ミレア:王国,メアモミカ:王国,メグラトテ:王国,メリル:王国,メルク:王国,モコ:王国,モンク:王国,ヤト:王国,ユイリア:王国,ユーヴェンス:王国,ユーリアン:王国,ヨハネス:王国,ライアン:王国,ライジー:王国,ラベンダ:王国,ラユシフ:王国,ランサー:王国,リアット:王国,リゼル:王国,リチャード:王国,リト:王国,リフリス:王国,リムリー:王国,ルーイ:王国,ルーシー:王国,ルーレイド:王国,ルストア:王国,レウィティア:王国,レティシア:王国,ロア:王国,ローエル:王国,ローダイン:王国,ロザリナ:王国,ロジャー:王国,ロトゥン:王国,ロメニー:王国,ワイアット:王国,
+アーテリオ:科学,アウラ:科学,アケフェゴ:科学,アセト:科学,アニエラ:科学,アニマ:科学,アニムス:科学,アマーリエ:科学,アムリノン:科学,アリューム:科学,アルミナ:科学,イスティント:科学,ヴェナ:科学,エアハルト:科学,エリージア:科学,エルラ:科学,オデット:科学,オフィシア:科学,オペラント:科学,ガイ:科学,カナト:科学,キノロン:科学,クシャス:科学,ケイ:科学,ケミカ:科学,サイメリカ:科学,シェナ:科学,ジェノ:科学,シャーレリ:科学,シャリッシュ:科学,ジュディス:科学,シュメルツ:科学,ステートリン:科学,スマイリー:科学,スラヴァ:科学,チェルカール:科学,チェレンシー:科学,ティーゼ:科学,ディトクス:科学,ティマ:科学,テルル:科学,ナノン:科学,ノーヴィアス:科学,ノット:科学,パチュリ:科学,バレット:科学,ピコニィ:科学,ヒスミル:科学,ヒューズ:科学,プシコ:科学,ミュスクル:科学,メレチア:科学,ユリウス:科学,ラインハート:科学,リッチー:科学,ルシェリーク:科学,ルティ:科学,ルミナリア:科学,ルルーエ:科学,レイミィ:科学,レスティエナ:科学,レディブル:科学,レンディス:科学,ロット:科学,
+アガーテ:機械,アルキメシス:機械,アンティーク:機械,アンリ:機械,イムア:機械,ヴァイゼル:機械,ヴァルネット:機械,ヴィクトリカ:機械,ウィルバード:機械,ヴィントス:機械,ヴェルメラ:機械,ヴォーリア:機械,エッタ:機械,オーディエン:機械,オディール:機械,オレグ:機械,カーモス:機械,カプナート:機械,カルフィ:機械,カルメン:機械,ガレス:機械,ガンドルフォ:機械,キイナ:機械,キッド:機械,グロウル:機械,クロード:機械,クロック:機械,ココルシア:機械,ザッカリー:機械,ジェット:機械,シェラザード:機械,ジェラルド:機械,シャーリー:機械,ジャスパー:機械,ジャンナ:機械,ジル:機械,スヴェン:機械,スチュア:機械,スティーノス:機械,ストリチカ:機械,セドリック:機械,タイロス:機械,ダスクード:機械,タトル:機械,チャイム:機械,ディアン:機械,デイヴィッド:機械,ティガトレナ:機械,ティモシー:機械,デンホルム:機械,トーリス:機械,トルエノ:機械,トレヴァー:機械,ドロシー:機械,トロモコ:機械,ニコラ:機械,ハードエッグ:機械,ハグルマ:機械,パルトネール:機械,ピーター:機械,ビビアナ:機械,ファルカ:機械,フィデリオ:機械,フェルナンド:機械,フォトール:機械,ヘキサルト:機械,ベル:機械,マリア:機械,マリエラ:機械,マリン:機械,ミスチフ:機械,メアリローサ:機械,ラム:機械,ルクレティア:機械,ルジャンドル:機械,ルリアンヌ:機械,レミン:機械,ロスコー:機械,ロマネバロム:機械,ロレッタ:機械,
+アシクス:恐竜,アティバル:恐竜,アリリ:恐竜,アルトナ:恐竜,イグアノ:恐竜,イリウム:恐竜,イレヌス:恐竜,ウルナ:恐竜,カイヤナ:恐竜,カルデラ:恐竜,カロカロ:恐竜,キファラ:恐竜,クラニア:恐竜,クロエ:恐竜,ケラセア:恐竜,コラル:恐竜,サキュラ:恐竜,ジュジュ:恐竜,スピノ:恐竜,スフィノー:恐竜,セルシュ:恐竜,ゼロ:恐竜,ダイナー:恐竜,ツァック:恐竜,ティタン:恐竜,ティビア:恐竜,ディラ:恐竜,トロオド:恐竜,ナスカ:恐竜,バシロ:恐竜,パラティ:恐竜,パンタリエ:恐竜,プテラノ:恐竜,フパリマ:恐竜,フロタル:恐竜,ヘルミナシオ:恐竜,ポラカ:恐竜,マクシラ:恐竜,ミンミ:恐竜,モナ:恐竜,ライネス:恐竜,ラザ:恐竜,ラジュラ:恐竜,ラムカーナ:恐竜,ルイザ:恐竜,ルベラ:恐竜,レウェナ:恐竜,レクシーナ:恐竜,
+アーデウス:空,アコル:空,アザリアス:空,アズラキル:空,アミチ:空,アルダーシェ:空,イヴ:空,イルミリィ:空,ヴィキディテ:空,ウィリエル:空,ウーゴ:空,エイラ:空,エードルフ:空,エデンエリス:空,エルーリオ:空,オリープ:空,オルトス:空,ククリ:空,クレーロン:空,コーネリア:空,コルティア:空,サフィリカ:空,シャルフィナ:空,シャロン:空,シャンテ:空,シュトレーム:空,シンディ:空,スーリーレ:空,スクリープ:空,ステイニィ:空,スリーズ:空,セチェル:空,セラム:空,セレス:空,ソール:空,タァトハァト:空,ダイアナ:空,ツィリツェル:空,ティオロ:空,ティルア:空,デトレフ:空,テミシエル:空,テンダー:空,トイフェル:空,ハニーウェル:空,パルフューム:空,ハルモニカ:空,ビアンカ:空,ピスティア:空,ピッツェル:空,ビデリア:空,フウ:空,フェイエル:空,フェビンリー:空,フリエール:空,フレッド:空,ヘロイーズ:空,ボリス:空,マギナアリス:空,マリベル:空,ミシェリア:空,ムリュリル:空,メメララメル:空,メリーチェ:空,メルセディア:空,ラヴィオル:空,ラピッド:空,リース:空,リカルラ:空,リトニエル:空,リュネッタ:空,ルフレイエ:空,ロミアチシャ:空,
+アーミャ:砂漠,アシュファー:砂漠,アスワド:砂漠,アルファルド:砂漠,イルハーレ:砂漠,ヴィルトテス:砂漠,ヴェルデュ:砂漠,ウェンディ:砂漠,ウフク:砂漠,ウリダ:砂漠,ギブリーリ:砂漠,キュアノ:砂漠,グファル:砂漠,グルカード:砂漠,サーヒル:砂漠,サディク:砂漠,サミルスハ:砂漠,サリハーティ:砂漠,サルタート:砂漠,ジード:砂漠,シーファ:砂漠,ジーン:砂漠,ジェフディ:砂漠,ジャシャル:砂漠,シャハーユ:砂漠,シュリカ:砂漠,シュルーラ:砂漠,ジンニーヤ:砂漠,スヴァログ:砂漠,ストリーヴァ:砂漠,セス:砂漠,トゥルバ:砂漠,ナガラシャ:砂漠,ナフル:砂漠,ナマールィ:砂漠,ヌイ:砂漠,ネメトケス:砂漠,ノエミー:砂漠,ハーメディ:砂漠,パステーニャ:砂漠,パルシャ:砂漠,ファジュル:砂漠,ファム:砂漠,フェズ:砂漠,プレーム:砂漠,ペルアーア:砂漠,ムディア:砂漠,メトテト:砂漠,メフリ:砂漠,モイ:砂漠,モルーシャ:砂漠,モルタザ:砂漠,ラティーフ:砂漠,ラフィーカ:砂漠,リーシャ:砂漠,リーハネフ:砂漠,リズーニャ:砂漠,リン:砂漠,ロシャナク:砂漠,ロゼ:砂漠,ワクラム:砂漠,
+アール:死者,アイク:死者,アバン:死者,アブサン:死者,アムレット:死者,アロセール:死者,アンジエ:死者,アントール:死者,ヴィクター:死者,ヴィスパ:死者,ヴィリローゼ:死者,ヴェレッド:死者,ヴォーヌ:死者,エヴェクジレ:死者,エルシー:死者,エルフェール:死者,エルフリーデ:死者,エルリィネ:死者,エレーナ:死者,エレオノール:死者,オーウェン:死者,オルコ:死者,クート:死者,グレイブ:死者,グレース:死者,コゼット:死者,コルネイユ:死者,コロン:死者,サージュ:死者,サイクス:死者,サンミゼル:死者,ジェシカ:死者,シシリー:死者,シトルイユ:死者,シャイリー:死者,シャリオット:死者,ジャントール:死者,シュテル:死者,スレイヤ:死者,ソリチュア:死者,ターニップ:死者,チェネレ:死者,テルジュア:死者,ネゴシアン:死者,ネズ:死者,ノワール:死者,ノンノ:死者,ノンレガール:死者,バーバラ:死者,ハリエット:死者,バンダージェ:死者,ハンナ:死者,ファルチェル:死者,フィリベール:死者,フォトン:死者,ブギーブル:死者,ブランカ:死者,フリアロ:死者,フレイア:死者,プロメテンド:死者,ベネデット:死者,ヘミリック:死者,マーレイ:死者,マギレイテ:死者,マティス:死者,マノロ:死者,マルスリーヌ:死者,マルトゥール:死者,ミスティカ:死者,ミュッセル:死者,ミント:死者,メザノッテ:死者,メモリニカ:死者,ユク:死者,ラディペリィ:死者,ラフル:死者,ランソニー:死者,リーネ:死者,リベリオ:死者,リュエール:死者,リュシアン:死者,リロイ:死者,ルクア:死者,ルクスリアス:死者,ルシウス:死者,ルシル:死者,ルスフェンド:死者,ルチアーノ:死者,ルメル:死者,レイン:死者,レクサイマ:死者,レテネーブル:死者,レム:死者,ローレン:死者,ロマネ:死者,
+エルピス:雫,
+アナーヒト:少数民族,アナスタシア:少数民族,アルリィ:少数民族,イヴィツァ:少数民族,イェスタ:少数民族,イメルダ:少数民族,ウェンロン:少数民族,ウナ:少数民族,エイネイ:少数民族,エヴァン:少数民族,エミリク:少数民族,エントラ:少数民族,エンフィー:少数民族,カザニ:少数民族,カトリーヌ:少数民族,カナリア:少数民族,カペル:少数民族,カリョウヒ:少数民族,カリロク:少数民族,ギョクラン:少数民族,グエン:少数民族,クロウラ:少数民族,ザウル:少数民族,シージェ:少数民族,シェンイン:少数民族,シェンルゥ:少数民族,シオン:少数民族,シャオシェン:少数民族,シャオリン:少数民族,シュイリエ:少数民族,シユエン:少数民族,ショキ:少数民族,タミル:少数民族,ツェルホウ:少数民族,テイシュウ:少数民族,テンライ:少数民族,ドルサム:少数民族,ナキ:少数民族,ナターシャ:少数民族,ハイホン:少数民族,ハルサルヒ:少数民族,ファルゥン:少数民族,フィラル:少数民族,フーディエ:少数民族,プリオニック:少数民族,ヘェイスォ:少数民族,ヘーゼル:少数民族,ホロロ:少数民族,ホンファウ:少数民族,マーヤ:少数民族,マウム:少数民族,マォ:少数民族,ミャオピン:少数民族,ミラ:少数民族,メイハウ:少数民族,メイフォン:少数民族,メイレット:少数民族,ユージア:少数民族,ユゥル:少数民族,ユエ:少数民族,ヨウ:少数民族,ヨウキ:少数民族,ラディット:少数民族,ランファ:少数民族,リァンシ:少数民族,リーホア:少数民族,リシ:少数民族,リファー:少数民族,リャンハオ:少数民族,リュンリー:少数民族,リョウエン:少数民族,リンジー:少数民族,リンネン:少数民族,リンラン:少数民族,ルオシャ:少数民族,ロウソウ:少数民族,ロミン:少数民族,
+アーサー:常夏,アイウォルツ:常夏,アウグスト:常夏,アルタイル:常夏,イアル:常夏,イワン:常夏,ヴァンバト:常夏,ヴィアシオン:常夏,ヴィルベル:常夏,エストレシア:常夏,エリンシア:常夏,カナカエイア:常夏,カナロア:常夏,カニャルナ:常夏,ガロデ:常夏,キティ:常夏,キャシー:常夏,キャラマール:常夏,クラルテ:常夏,クリオネット:常夏,コーディ:常夏,サァハ:常夏,サラ:常夏,ジェネル:常夏,シェルフィー:常夏,スカジィウス:常夏,セオドア:常夏,ゼグダ:常夏,セネビグロフ:常夏,ターニャ:常夏,ダリオ:常夏,チェリーピケ:常夏,ディスノルド:常夏,ナヴィシュカ:常夏,ナキマリシー:常夏,ナタリア:常夏,ニール:常夏,ニコ:常夏,ネームレス:常夏,ネル:常夏,ノア:常夏,ヒューカ:常夏,フィーリ:常夏,フィオリナ:常夏,フォルケン:常夏,フラゲルム:常夏,ブリッツ:常夏,プルメリ:常夏,プレイヤード:常夏,ベグラブル:常夏,ペシェ:常夏,ベンヴェヌ:常夏,マリィナ:常夏,ミャルマール:常夏,ミュネイス:常夏,メティエ:常夏,メルナード:常夏,メレーニア:常夏,モアナ:常夏,ラージャ:常夏,ライズル:常夏,リヴェーラ:常夏,リコラ:常夏,リベルディ:常夏,リリカ:常夏,ルオマール:常夏,レヴィアヴィ:常夏,レオン:常夏,レノンポルド:常夏,
+アノス:植物,アフェクシア:植物,アミカ:植物,アルバート:植物,アングダット:植物,アンダント:植物,イッスマン:植物,イノセンタ:植物,ヴェント:植物,エイシー:植物,エピヌグリス:植物,オキサリッタ:植物,オルガ:植物,キアン:植物,ギャグリー:植物,キルファ:植物,グラジニオ:植物,グリゼル:植物,クロンキスト:植物,シアノ:植物,ジシェロ:植物,シスル:植物,シルビア:植物,スペルシファ:植物,セネシオ:植物,セルバ:植物,ダチュリーナ:植物,チュリプ:植物,ティオニア:植物,ティグ:植物,ティルセプス:植物,ニーナ:植物,ニッセ:植物,ニュンプゥ:植物,ネモフィラ:植物,ノーマン:植物,バジル:植物,バンバーニャ:植物,ピアニー:植物,ヒペリリノ:植物,ヒルダ:植物,フィト:植物,ブーゲリア:植物,フルクトース:植物,ブレイデン:植物,プレネア:植物,ヘザー:植物,ペルール:植物,ポプラ:植物,ボルボロ:植物,マーブル:植物,マトリクス:植物,ミルトニア:植物,ミルルリ:植物,ムイス:植物,メイリーシャ:植物,メルローゼン:植物,モリー:植物,ユヌット:植物,ライフィーネ:植物,ラシーヌ:植物,リィーベ:植物,リーフェイト:植物,リオネル:植物,リディ:植物,リナシュア:植物,ルーカス:植物,ルビー:植物,ルピナス:植物,レフレーゼ:植物,ローザ:植物,ローマナス:植物,ローリエル:植物,ロダ:植物,ロワローゼン:植物,
+アウリニナ:西部,アスター:西部,アラベラ:西部,アロロア:西部,イーニア:西部,イグナイト:西部,イクバヤ:西部,ヴァーディル:西部,ヴァイオラ:西部,ウィンスター:西部,ウェルテクス:西部,ウルリカ:西部,エルダー:西部,エルフェッロ:西部,オーランド:西部,オズボーン:西部,オレガノ:西部,カリーナ:西部,ガルディ:西部,カルティナ:西部,カレタカ:西部,カント:西部,キマリス:西部,キュリー:西部,グレゴトール:西部,ゲオルド:西部,ジェイデン:西部,シャアイラ:西部,ジャンゴ:西部,ジュワユース:西部,セシリア:西部,ソノラ:西部,タウタカ:西部,タタンカ:西部,チェイス:西部,チャーリー:西部,チュチュ:西部,ティナ:西部,ティンバー:西部,テテメコ:西部,ドラド:西部,ナナリー:西部,ニヴィポア:西部,ネルス:西部,ハニーバニー:西部,ビジュ:西部,ファーガ:西部,フィスキオ:西部,フィニ:西部,フラヴィア:西部,ブランドル:西部,ブリット:西部,ホークス:西部,ホーベル:西部,ポワワカ:西部,マリー:西部,ミューゼ:西部,ヤツィ:西部,ヨルルタ:西部,ライカ:西部,ラヴィスタ:西部,リリー:西部,ルルーベット:西部,レイヴン:西部,ローナ:西部,ロッティー:西部,ロレンツォ:西部,
+アーゾフ:雪,アネモネ:雪,アモル:雪,イグナツィオ:雪,ヴァレリー:雪,ヴィックス:雪,ヴェロニカ:雪,エルシュカ:雪,カエ:雪,カシュバル:雪,カルト:雪,ガングニール:雪,キャンディス:雪,グウェニー:雪,グラシアール:雪,グリィーゼン:雪,グレア:雪,クローシェ:雪,シェルミン:雪,ジドラモ:雪,シモン:雪,ジャルキィ:雪,シュネ:雪,ジュブラー:雪,シュマリ:雪,ジュリアンナ:雪,スヴィー:雪,スタラッテ:雪,スノー:雪,ソフィーヤ:雪,ティアドロ:雪,ティレーズ:雪,デジェル:雪,デュオ:雪,トイトイ:雪,ドミニカ:雪,トラスト:雪,ナディエイド:雪,ニックス:雪,ヌイヌイ:雪,ネーヴィル:雪,ネーヴェラ:雪,ネクティス:雪,ハーフェス:雪,パトリシア:雪,パニフ:雪,パユ:雪,バルトロメイ:雪,ピッピ:雪,フィオーレ:雪,フィオネ:雪,フォルクス:雪,フプルル:雪,ブラッド:雪,フリン:雪,フレイミオ:雪,フロージア:雪,フロリリア:雪,ベリンダ:雪,ベレリィナ:雪,ポロ:雪,ミーリャ:雪,ミュエル:雪,メルーシュ:雪,メルフィア:雪,メルレッティ:雪,ユハ:雪,ラディエチル:雪,ラクシア:雪,リージュ:雪,リッペン:雪,リュフト:雪,リラフィ:雪,リレア:雪,ルヴィーレン:雪,ルドイド:雪,ルミキ:雪,レイトス:雪,レナータ:雪,レノル:雪,ロザード:雪,ロニヤ:雪,
+アデル:動物,アルヴァール:動物,アンテル:動物,イーゲル:動物,ヴィラニア:動物,ヴィリオ:動物,ウィルクム:動物,ヴォルガル:動物,エクセ:動物,エシュルード:動物,エスピエ:動物,エルグ:動物,エンペラム:動物,オルダンセン:動物,オルニシア:動物,ガゼリア:動物,カブリオル:動物,キッケル:動物,キャリン:動物,キャロル:動物,ククラーム:動物,クニークルス:動物,クランティフ:動物,グルトラ:動物,コアリス:動物,コエリオ:動物,コラード:動物,コン:動物,シーニュ:動物,シーラ:動物,ジベル:動物,ジャスミン:動物,シャトラン:動物,シャム:動物,シュピーリア:動物,スティト:動物,セレナ:動物,ゾラン:動物,ツァルト:動物,ティーグル:動物,ティヴェル:動物,デイジー:動物,ティミッド:動物,ティルミー:動物,テッド:動物,テノガード:動物,トゥリクル:動物,トラ:動物,ドリミーナ:動物,ニユロハス:動物,ノエル:動物,ノノ:動物,ハウド:動物,パストルメ:動物,パニャン:動物,バフォマッド:動物,ハルシュト:動物,ビアルドル:動物,フィネット:動物,プウカ:動物,フェアテール:動物,フェーレシア:動物,フォルナ:動物,フラージュ:動物,フリーダ:動物,プリテリオナ:動物,フリューゲル:動物,ベルナー:動物,ベルント:動物,ホーラ:動物,ミーシュカ:動物,ユディ:動物,ラチェレ:動物,ラドルフ:動物,ラユッタ:動物,ララ:動物,リービット:動物,リイリ:動物,リキ:動物,リコピン:動物,リスペル:動物,リルシェ:動物,ルピエ:動物,レザール:動物,ローフィ:動物,ロニセラ:動物,ロメオ:動物,ロロ:動物,ロンナミア:動物,
+アーヴェル:魔法,アイザック:魔法,アイリーン:魔法,アインレーラ:魔法,アクセレータ:魔法,アシステア:魔法,アシュレイ:魔法,アズール:魔法,アトリトッテ:魔法,アニバス:魔法,アルシオン:魔法,アルシュータ:魔法,アルフレド:魔法,アルルジーナ:魔法,アロイス:魔法,アン:魔法,ヴィルクリヒ:魔法,エミー:魔法,エリノーラ:魔法,エレーヴ:魔法,オシェル:魔法,オリアナ:魔法,カーマイン:魔法,カレン:魔法,キオ:魔法,グイム:魔法,クチーテル:魔法,クラフト:魔法,クリフォード:魔法,クレール:魔法,ココテース:魔法,ココラティア:魔法,コモーツィ:魔法,シエラ:魔法,シャルドネ:魔法,シャルロット:魔法,シルヴァリア:魔法,シルキー:魔法,シンレット:魔法,スコーラ:魔法,ステイクス:魔法,ストゥーピド:魔法,スフィア:魔法,スフェラ:魔法,スフォル:魔法,セッカ:魔法,セルドナ:魔法,ソリッソ:魔法,ソレル:魔法,ソワレ:魔法,チリッカ:魔法,テオ:魔法,トレイナ:魔法,トロイメライ:魔法,ナオス:魔法,ネウリ:魔法,ノルン:魔法,ハーバリッテ:魔法,ハリアープ:魔法,ピエトロ:魔法,フィルデア:魔法,プライアル:魔法,フレデリック:魔法,ベッセン:魔法,ヘルメトレス:魔法,ホルディア:魔法,マーフィー:魔法,マヌカ:魔法,マリスジェム:魔法,ミザリア:魔法,メーア:魔法,メチェーレレ:魔法,メルモルテ:魔法,ユフィーゼ:魔法,ユルエ:魔法,ヨルスウィズ:魔法,ラハティア:魔法,ラプカ:魔法,リジェンテ:魔法,リッカリリィ:魔法,リュカリュカ:魔法,リュナリュナ:魔法,ルカ:魔法,ルスティ:魔法,ルタリスク:魔法,ルナーティア:魔法,ルフィーナ:魔法,レイチェル:魔法,レヒト:魔法,レルハルニー:魔法,ロアーヌ:魔法,
+アクリス:妖精,アコード:妖精,アベイユ:妖精,アミャダ:妖精,アムネシア:妖精,アルヴィン:妖精,アントニア:妖精,イウロシュア:妖精,イムスト:妖精,イルリウ:妖精,イレーグル:妖精,ウィオン:妖精,ウィンテッル:妖精,エテベリィタ:妖精,エト:妖精,エトラージュ:妖精,オパール:妖精,オリビエ:妖精,キーリ:妖精,ギフティペペ:妖精,クラリーチェ:妖精,グルフーナ:妖精,コナー:妖精,コルザ:妖精,サローディア:妖精,シャシャ:妖精,シャルメ:妖精,ショーロ:妖精,シルフィカ:妖精,シルレッタ:妖精,ゼフュロダイ:妖精,ソマリリス:妖精,チック:妖精,チュール:妖精,ティオーラ:妖精,ティフォネ:妖精,ナプニス:妖精,ネステリカ:妖精,パニシュメル:妖精,パピヨン:妖精,パリストス:妖精,ヒュチュカ:妖精,ファーラ:妖精,フィーユ:妖精,フォルクロレ:妖精,フラッフ:妖精,フルルメリィ:妖精,フロイレイダ:妖精,ベイルージュ:妖精,ベリル:妖精,ヘルフィート:妖精,マルクス:妖精,ミーミア:妖精,ミノリィ:妖精,ミュウ:妖精,メイ:妖精,メネライア:妖精,メルミー:妖精,メロロティア:妖精,ユアン:妖精,ユーリ:妖精,ヨージェフ:妖精,ラーエン:妖精,ラズライト:妖精,ラソワレーヌ:妖精,ラピスラズリ:妖精,ララチェム:妖精,リューシュ:妖精,リリップ:妖精,ルジェナ:妖精,レイディオス:妖精,レネ:妖精,レベッカ:妖精,レンティリア:妖精,
+あおにび:和,あかがね:和,あけぼの:和,あまぎ:和,あららぎ:和,あんず:和,いざよい:和,いずみ:和,いろは:和,えんじ:和,おうみ:和,おにひめ:和,かざの:和,かなた:和,ぎえもん:和,きくまろ:和,キクミコマチ:和,キクミコマル:和,きざくら:和,きららまる:和,くゆり:和,くろう:和,くろとび:和,こうめ:和,ごこくてん:和,ことぶき:和,こひばり:和,こんこ:和,ごんのすけ:和,しぐれ:和,しずめき:和,しののめ:和,しろつめ:和,ジン:和,すずかぜ:和,せいらん:和,せきと:和,せつな:和,せんり:和,だいぐれん:和,たいてんき:和,たづ:和,ちいまる:和,ちとせ:和,ちひろ:和,ちゃがまる:和,つらら:和,てまり:和,とどめき:和,とばり:和,ともえ:和,なたね:和,ねねか:和,はいゆき:和,はやて:和,ひいらぎ:和,ひなげし:和,ひぶき:和,ひめちよ:和,ひもろき:和,ふづき:和,へみみ:和,ほむら:和,まつかぜ:和,みおぎ:和,みくまり:和,みさご:和,みずみ:和,みわべ:和,モクレン:和,やぐも:和,やた:和,やちよ:和,やまぶき:和,ゆうづる:和,ゆのか:和,よいち:和,よすけ:和,よろず:和,らいこう:和,らいら:和,りょうば:和,りんどう:和,ろくしょう:和,てんし:和,`
+
+        const unitMaster = rawUnits.split(/[\s,]+/).map(item => {
+            const parts = item.split(':');
+            if(parts.length < 2) return null;
+            return { n: parts[0], c: parts[1] };
+        }).filter(u => u !== null);
+        const countryList = ["王国", "妖精", "機械", "和", "空", "西部", "エレキ", "魔法", "恐竜", "砂漠", "死者", "少数民族", "動物", "常夏", "植物", "科学", "お菓子", "雪"];
+        let gameMode = 'free', currentDifficulty = 'easy', answer = "", currentRow = 0, currentCol = 0, guesses = [], isGameOver = false, displayWidth = 5, historyEmojis = [];
+        let selectedCountries = [], timerInterval = null, isProcessing = false;
+
+        function switchMode(mode) {
+            gameMode = mode;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`tab-${mode}`).classList.add('active');
+            initGame();
+        }
+
+        function toKatakana(str) { return str.replace(/[ぁ-ん]/g, s => String.fromCharCode(s.charCodeAt(0) + 0x60)); }
+        function getDisplayName(name) {
+    const unit = unitMaster.find(u => u.n === name);
+    const country = unit ? unit.c : "";
+    
+    let countryDisplay = "";
+    if (country) {
+        countryDisplay = country === "王国" ? `【${country}】` : `【${country}の国】`;
+    }
+
+    let nameDisplay = name;
+    if (name === "てんし") {
+        nameDisplay = "天子（テンシ）";
+    } else if (/[ぁ-ん]/.test(name)) {
+        nameDisplay = `${name}（${toKatakana(name)}）`;
+    } else {
+        nameDisplay = toKatakana(name);
+    }
+
+    return `${nameDisplay} ${countryDisplay}`;
+}
+        function showToast(msg) { const x = document.getElementById("toast");
+            x.innerText = msg || "存在しないユニットです"; x.className = "show"; setTimeout(() => { x.className = ""; }, 1500);
+        }
+        function showHelp() { document.getElementById("help-modal").style.display = "flex"; }
+        function showSettings() { document.getElementById("settings-modal").style.display = "flex"; updateSettingsUI(); }
+        function hideModals() { document.querySelectorAll(".modal-overlay").forEach(m => m.style.display = "none"); }
+
+        function getStats() {
+            const key = gameMode === 'daily' ? 'merst_stats_daily' : 'merst_stats_free';
+            return JSON.parse(localStorage.getItem(key)) || { played: 0, win: 0, streak: 0, maxStreak: 0, dist: Array(11).fill(0), lastDate: "" };
+        }
+
+        function saveStats(isWin, tries) {
+            if (gameMode === 'free' && selectedCountries.length > 0) return;
+
+            let stats = getStats();
+            stats.played++;
+            if (isWin) {
+                stats.win++;
+                stats.dist[tries]++;
+                if (gameMode === 'daily') {
+                    const today = new Date().toLocaleDateString();
+                    const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toLocaleDateString();
+                    if (stats.lastDate === yesterday) stats.streak++;
+                    else if (stats.lastDate !== today) stats.streak = 1;
+                    stats.lastDate = today;
+                    if (stats.streak > stats.maxStreak) stats.maxStreak = stats.streak;
+                }
+            } else {
+                if (gameMode === 'daily') stats.streak = 0;
+            }
+            const key = gameMode === 'daily' ? 'merst_stats_daily' : 'merst_stats_free';
+            localStorage.setItem(key, JSON.stringify(stats));
+        }
+
+        function showStats() {
+            const stats = getStats();
+            document.getElementById("stats-title").innerText = gameMode === 'daily' ? "デイリーモード統計" : "フリーモード統計";
+            document.getElementById("stat-played").innerText = stats.played;
+            document.getElementById("stat-winrate").innerText = (stats.played ? Math.round((stats.win / stats.played) * 100) : 0) + "%";
+            document.getElementById("stat-streak").innerText = stats.streak;
+            document.getElementById("stat-maxstreak").innerText = stats.maxStreak;
+
+            const chart = document.getElementById("dist-chart");
+            chart.innerHTML = "";
+            const maxDist = Math.max(...stats.dist, 1);
+            for (let i = 1; i <= 10; i++) {
+                const row = document.createElement("div");
+                row.className = "dist-row";
+                const bar = document.createElement("div");
+                bar.className = "dist-bar" + (isGameOver && currentRow === i && toKatakana(answer) === guesses[i-1].join("") ? " highlight" : "");
+                bar.style.width = Math.max(7, (stats.dist[i] / maxDist) * 90) + "%";
+                bar.innerText = stats.dist[i];
+                row.innerHTML = `<span class="dist-label">${i}</span>`;
+                row.appendChild(bar);
+                chart.appendChild(row);
+            }
+            document.getElementById("stats-modal").style.display = "flex";
+        }
+
+        function updateBadges() {
+            const container = document.getElementById("header-badges");
+            container.innerHTML = "";
+            const badges = [];
+
+            if (gameMode === 'daily') {
+                badges.push("デイリー");
+            } else {
+                badges.push({ 'easy': 'ふつう', 'normal': 'ムズ', 'hard': '激ムズ' }[currentDifficulty]);
+                selectedCountries.forEach(c => badges.push(c));
+            }
+
+            badges.forEach(text => {
+                const span = document.createElement("span");
+                span.className = "diff-badge";
+                span.innerText = text;
+                container.appendChild(span);
+            });
+        }
+
+        function updateCountdown() {
+            const now = new Date();
+            const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+            const diff = tomorrow - now;
+            const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+            const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+            const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+            document.getElementById("timer-text").innerText = `${h}:${m}:${s}`;
+        }
+
+        function showResult(isWin) {
+            isGameOver = true;
+            document.getElementById("result-modal").style.display = "flex";
+            document.getElementById("result-status").innerText = isWin ? "正解！" : "残念...";
+            document.getElementById("answer-display").innerText = getDisplayName(answer);
+          
+            const enterBtn = document.getElementById('main-enter-btn');
+            const delBtn = document.getElementById('main-del-btn');
+
+            delBtn.innerText = "Xで結果を共有";
+            delBtn.style.backgroundColor = "#000"; 
+            delBtn.onclick = () => shareX();
+
+            if (gameMode === 'daily') {
+                document.getElementById("countdown-area").style.display = "block";
+                document.getElementById("next-btn-modal").style.display = "none";
+                if(!timerInterval) timerInterval = setInterval(updateCountdown, 1000);
+                updateCountdown();
+                enterBtn.innerText = "ENTER";
+                enterBtn.style.opacity = "0.5";
+                enterBtn.onclick = null;
+            } else {
+                document.getElementById("countdown-area").style.display = "none";
+                document.getElementById("next-btn-modal").style.display = "block";
+                enterBtn.innerText = "次の問題へ";
+                enterBtn.style.backgroundColor = "var(--primary)"; 
+                enterBtn.style.opacity = "1";
+                enterBtn.onclick = () => resetGame(); 
+            }
+        }
+        
+        async function initGame() {
+            const enterBtn = document.getElementById('main-enter-btn');
+            const delBtn = document.getElementById('main-del-btn');
+            enterBtn.innerText = "ENTER";
+            enterBtn.style.backgroundColor = ""; 
+            enterBtn.style.opacity = "1";
+            enterBtn.onclick = () => submitGuess();
+            delBtn.innerText = "⌫";
+            delBtn.style.backgroundColor = ""; 
+            delBtn.onclick = () => deleteChar();
+            
+            if(timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+
+            if (gameMode === 'daily') {
+                const daily = getDailyAnswer();
+                answer = daily.word; displayWidth = 5;
+                setupBoard();
+                const saved = JSON.parse(localStorage.getItem('merst_wordle_daily') || '{}');
+                if (saved.date === daily.date && saved.history) {
+                    await restoreProgress(saved.history);
+                    if (saved.isGameOver) showResult(saved.history.includes(toKatakana(answer)));
+                }
+            } else {
+                const saved = JSON.parse(localStorage.getItem('merst_wordle_free') || '{}');
+                if (saved.answer) {
+                    answer = saved.answer;
+                    displayWidth = saved.displayWidth;
+                    currentDifficulty = saved.difficulty || currentDifficulty;
+                    selectedCountries = saved.selectedCountries || []; 
+                    setupBoard();
+                    await restoreProgress(saved.history || []);
+                    if (saved.isGameOver) showResult((saved.history || []).includes(toKatakana(answer)));
+                } else {
+                    startNewFreeGame();
+                }
+            }
+            updateBadges();
+            buildKeyboard();
+        }
+
+        function startNewFreeGame() {
+            let pool = (currentDifficulty === 'easy') ? unitMaster.filter(u => u.n.length === 5) : 
+                       (currentDifficulty === 'normal') ? unitMaster.filter(u => u.n.length >= 3 && u.n.length <= 5) : unitMaster;
+            if (selectedCountries.length > 0) pool = pool.filter(u => selectedCountries.includes(u.c));
+            if (pool.length === 0) pool = unitMaster.filter(u => u.n.length === 5);
+            const picked = pool[Math.floor(Math.random() * pool.length)];
+            answer = picked.n;
+            displayWidth = (currentDifficulty === 'hard') ? 6 : (currentDifficulty === 'normal' && answer.length < 5) ? 5 : answer.length;
+            if (currentDifficulty === 'easy') displayWidth = 5;
+            setupBoard();
+            saveState();
+        }
+
+        function setupBoard() {
+            currentRow = 0; currentCol = 0; isGameOver = false; historyEmojis = []; isProcessing = false;
+            guesses = Array.from({ length: 10 }, () => []);
+            document.getElementById("action-area").innerHTML = `<button class="icon-btn" style="background:#ff8a80; color:white; border-radius:4px; padding:5px 15px; font-weight:bold; margin:0 auto;" onclick="document.getElementById('giveup-modal').style.display='flex'">降参する</button>`;
+            const blocks = [document.getElementById("block-1"), document.getElementById("block-2")];
+            blocks.forEach((b, idx) => {
+                b.innerHTML = ""; b.style.gridTemplateColumns = `repeat(${displayWidth}, max-content)`;
+                for(let i=0; i < displayWidth * 5; i++) {
+                    const t = document.createElement("div"); t.className = "tile";
+                    t.id = `tile-${(idx * 5 + Math.floor(i / displayWidth)) * displayWidth + (i % displayWidth)}`;
+                    b.appendChild(t);
+                }
+            });
+            document.querySelectorAll('.key').forEach(k => { k.className = "key"; });
+        }
+
+        function saveState(isOver = false) {
+            const currentHistory = guesses.slice(0, currentRow).map(g => g.join(""));
+            if (gameMode === 'daily') {
+                const daily = getDailyAnswer();
+                localStorage.setItem('merst_wordle_daily', JSON.stringify({
+                    date: daily.date, history: currentHistory, isGameOver: isOver
+                }));
+            } else {
+                localStorage.setItem('merst_wordle_free', JSON.stringify({
+                    answer, displayWidth, difficulty: currentDifficulty, 
+                    selectedCountries: selectedCountries, 
+                    history: currentHistory, isGameOver: isOver
+                }));
+            }
+        }
+
+        async function restoreProgress(history) {
+            for (const word of history) {
+                const chars = word.split("");
+                guesses[currentRow] = chars;
+                const res = checkWord(word);
+                for (let i = 0; i < chars.length; i++) {
+                    const tile = document.getElementById(`tile-${currentRow * displayWidth + i}`);
+                    if (tile) {
+                        tile.innerText = chars[i];
+                        tile.classList.add(res[i]);
+                    }
+                    updateKeyColor(chars[i], res[i]);
+                }
+                historyEmojis.push(res.map(r => r === 'correct' ? '🟩' : r === 'present' ? '🟨' : '⬜').join(""));
+                currentRow++;
+            }
+        }
+
+        async function submitGuess() {
+            if (isGameOver || currentCol === 0 || isProcessing) return;
+            const guessStr = guesses[currentRow].join("");
+            if (!unitMaster.some(u => toKatakana(u.n) === guessStr)) { showToast(); return; }
+            
+            isProcessing = true;
+            const res = checkWord(guessStr);
+            let emoji = "";
+            for (let i = 0; i < guessStr.length; i++) {
+                const tile = document.getElementById(`tile-${currentRow * displayWidth + i}`);
+                tile.classList.add("flip"); await new Promise(r => setTimeout(r, 200));
+                tile.classList.add(res[i]); updateKeyColor(guessStr[i], res[i]);
+                emoji += (res[i] === 'correct'?'🟩':res[i]==='present'?'🟨':'⬜');
+            }
+            historyEmojis.push(emoji);
+            currentRow++;
+            currentCol = 0;
+            
+            const isWin = (guessStr === toKatakana(answer));
+            const isLost = (currentRow === 10);
+            
+            saveState(isWin || isLost);
+            if (isWin || isLost) {
+                saveStats(isWin, currentRow);
+                showResult(isWin);
+            }
+            isProcessing = false;
+        }            
+
+        function checkWord(guess) {
+            const ansArr = toKatakana(answer).split("");
+            const res = new Array(guess.length).fill("absent");
+            guess.split("").forEach((c, i) => { if (c === ansArr[i]) { res[i] = "correct"; ansArr[i] = null; } });
+            guess.split("").forEach((c, i) => { if (res[i] !== "correct" && ansArr.includes(c)) { res[i] = "present"; ansArr[ansArr.indexOf(c)] = null; } });
+            return res;
+        }
+
+        function shareX() {
+            const score = isGameOver ? historyEmojis.length : 'X';
+            const siteUrl = window.location.href;
+            const text = `メルストWordle\n${gameMode==='daily'?'デイリー':'フリー'} ${score}/10\n\n${historyEmojis.join('\n')}\n\n${siteUrl}\n#メルストWordle`;
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        function updateSettingsUI() {
+            document.querySelectorAll('#settings-modal .filter-btn[id^="diff-"]').forEach(b => b.classList.remove('active'));
+            const currentDiffBtn = document.getElementById(`diff-${currentDifficulty}`);
+            if(currentDiffBtn) currentDiffBtn.classList.add('active');
+            const exp = document.getElementById("diff-explanation");
+            if (currentDifficulty === 'easy') exp.innerText = "5文字のユニットのみ出題されます。";
+            else if (currentDifficulty === 'normal') exp.innerText = "3～5文字のユニットが出題されます。";
+            else if (currentDifficulty === 'hard') exp.innerText = "2～6文字のユニットが出題されます。";
+            const group = document.getElementById("country-filters");
+            group.innerHTML = "";
+            countryList.forEach(c => {
+                const btn = document.createElement("button"); btn.className = `filter-btn ${selectedCountries.includes(c) ? 'active' : ''}`;
+                btn.innerText = c; btn.onclick = () => { if (selectedCountries.includes(c)) selectedCountries = selectedCountries.filter(x => x !== c); else selectedCountries.push(c); updateSettingsUI(); };
+                group.appendChild(btn);
+            });
+        }
+        function changeDifficulty(diff) { currentDifficulty = diff; updateSettingsUI(); }
+        function confirmGiveupAction() { 
+            saveState(true);
+            saveStats(false, 0);
+            hideModals(); showResult(false);
+        }
+        function resetGame() { 
+            localStorage.removeItem('merst_wordle_free');
+            hideModals(); 
+            initGame();
+        }
+        function addChar(c) {
+            if (isGameOver || isProcessing) return;
+            if (currentCol < displayWidth) {
+                guesses[currentRow][currentCol] = c;
+                document.getElementById(`tile-${currentRow * displayWidth + currentCol}`).innerText = c;
+                currentCol++;
+            }
+        }
+        function deleteChar() { 
+            if (!isGameOver && !isProcessing && currentCol > 0) { currentCol--;
+                guesses[currentRow][currentCol] = ""; document.getElementById(`tile-${currentRow * displayWidth + currentCol}`).innerText = "";
+            } 
+        }
+        function updateKeyColor(c, res) { 
+            const btn = document.getElementById(`key-${c}`); if (!btn) return;
+            if (res === "correct") { btn.className = "key correct"; } else if (res === "present" && !btn.classList.contains("correct")) { btn.className = "key present";
+            } else if (res === "absent" && !btn.classList.contains("correct") && !btn.classList.contains("present")) { btn.className = "key key-absent";
+            } 
+        }
+
+        function getDailyAnswer() { const now = new Date();
+            const dateStr = now.toLocaleDateString('ja-JP', {timeZone: 'Asia/Tokyo'}); let seed = dateStr.split('/').reduce((a,b) => a + parseInt(b), 0);
+            const charPool = unitMaster.filter(u => u.n.length === 5); return { word: charPool[(seed * 13) % charPool.length].n, date: dateStr };
+        }
+
+        function buildKeyboard() {
+            const area = document.getElementById("kb-area");
+            area.innerHTML = "";
+            const rows = [["ア","カ","サ","タ","ナ","ハ","マ","ヤ","ラ","ワ"],["イ","キ","シ","チ","ニ","ヒ","ミ","","リ",""],["ウ","ク","ス","ツ","ヌ","フ","ム","ユ","ル","ン"],["エ","ケ","セ","テ","ネ","ヘ","メ","","レ",""],["オ","コ","ソ","ト","ノ","ホ","モ","ヨ","ロ","ー"],["ァ","ガ","ザ","ダ","","バ","パ","ャ","",""],["ィ","ギ","ジ","ヂ","","ビ","ピ","","",""],["ゥ","グ","ズ","ヅ","ッ","ブ","プ","ュ","ヴ",""],["ェ","ゲ","ゼ","デ","","ベ","ペ","","",""],["ォ","ゴ","ゾ","ド","","ボ","ポ","ョ","",""]];
+            rows.forEach((chars, i) => { const row = document.createElement("div"); row.className = "kb-row"; chars.forEach(c => { const btn = document.createElement("button"); btn.className = "key"; if (!c) btn.style.visibility = "hidden"; else { btn.innerText = c; btn.id = `key-${c}`; btn.onclick = () => addChar(c); } row.appendChild(btn); }); area.appendChild(row); if(i === 4) { const sep = document.createElement("div"); sep.className = "kb-separator"; area.appendChild(sep); } });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initGame();
+        });
+    </script>
+</body>
+</html>
