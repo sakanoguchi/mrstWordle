@@ -371,23 +371,29 @@
 
         function saveStats(isWin, tries) {
             if (gameMode === 'free' && selectedCountries.length > 0) return;
-
-            let stats = getStats();
+            let stats = getStats(); 
             stats.played++;
+            
             if (isWin) {
                 stats.win++;
                 stats.dist[tries]++;
                 if (gameMode === 'daily') {
+
                     const today = new Date().toLocaleDateString();
                     const yesterday = new Date(new Date().setDate(new Date().getDate() - 1)).toLocaleDateString();
                     if (stats.lastDate === yesterday) stats.streak++;
                     else if (stats.lastDate !== today) stats.streak = 1;
                     stats.lastDate = today;
-                    if (stats.streak > stats.maxStreak) stats.maxStreak = stats.streak;
+                } else {
+                    stats.streak++;
                 }
+                
+                if (stats.streak > stats.maxStreak) stats.maxStreak = stats.streak;
+                
             } else {
-                if (gameMode === 'daily') stats.streak = 0;
+                stats.streak = 0;
             }
+            
             const key = gameMode === 'daily' ? 'merst_stats_daily' : 'merst_stats_free';
             localStorage.setItem(key, JSON.stringify(stats));
         }
@@ -491,6 +497,8 @@
             
             if(timerInterval) { clearInterval(timerInterval); timerInterval = null; }
 
+            buildKeyboard();
+
             if (gameMode === 'daily') {
                 const daily = getDailyAnswer();
                 answer = daily.word; displayWidth = 5;
@@ -515,7 +523,6 @@
                 }
             }
             updateBadges();
-            buildKeyboard();
         }
 
         function startNewFreeGame() {
