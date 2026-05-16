@@ -621,7 +621,23 @@
         function shareX() {
             const score = isGameOver ? historyEmojis.length : 'X';
             const siteUrl = window.location.href;
-            const text = `メルストWordle\n${gameMode==='daily'?'デイリー':'フリー'} ${score}/10\n\n${historyEmojis.join('\n')}\n\n${siteUrl}\n#メルストWordle`;
+            
+            let modeText = "デイリー";
+            if (gameMode === 'free') {
+                let settings = [];
+                
+                const diffName = currentDifficulty === 'easy' ? 'ふつう' : currentDifficulty === 'normal' ? 'ムズ' : '激ムズ';
+                settings.push(diffName);
+                
+                if (selectedCountries && selectedCountries.length > 0) {
+                    settings = settings.concat(selectedCountries);
+                }
+                
+                modeText = `フリー　（${settings.join('、')}）`;
+            }
+
+            const text = `メルストWordle\n${modeText}\n${score}/10\n\n${historyEmojis.join('\n')}\n\n${siteUrl}\n#メルストWordle`;
+            
             window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
         }
 
